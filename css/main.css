@@ -1,0 +1,11 @@
+body{
+	background: #EEE;
+}
+.list-group li{
+	transition: all .3s;
+}
+.list-group li:hover{
+	cursor: pointer;
+	color: #FFF;
+	background-color: #8888bb;
+}

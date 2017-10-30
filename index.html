@@ -4,15 +4,140 @@
 	<head>
 		<meta charset="utf-8" />
 		<title></title>
-		<link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-		<link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+		<!--<link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">-->
+		<link rel="stylesheet" href="css/bootstrap.min.css" />
+		<link rel="stylesheet" href="css/main.css" />
 	</head>
 
 	<body>
-		<p>helloworld</p>
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<div class="container-flud">
+					<div class="row">
+						<div class="col-md-2">
+							<ul class="list-group">
+								<li class="list-group-item active">折线图</li>
+								<li class="list-group-item">柱状图</li>
+								<li class="list-group-item">饼图</li>
+								<li class="list-group-item">其他</li>
+							</ul>
+							<div class="jumbotron">
+								<p style="text-align: center;">Hello World</p>
+								<p style="text-align: center;">这里只做演示，具体怎么做到的请看代码中的注释</p>
+								<p style="margin: 0 auto;width: 126px;">
+									<a class="btn btn-primary btn-lg" href="http://echarts.baidu.com/index.html" role="button">Learn more</a>
+								</p>
+							</div>
+						</div>
+						<div class="col-md-10">
+							<div class="panel panel-default" id="chart-panel-container">
+								<div class="panel-heading">折线图</div>
+								<div class="panel-body">
+									<!--图表容器需要给一个具体的值-->
+									<div id="chart-container">
+
+									</div>
+									<a href="http://echarts.baidu.com/index.html" id="others" style="display: none;">其他功能请看官网文档，看不懂不理解的找GoogoKMChi问</a>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
 	</body>
-	
-	<script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
-	<script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+	<!--<script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>-->
+	<!--<script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>-->
+	<script type="text/javascript" src="js/jquery.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="js/echarts.js"></script>
+	<!--自定义图表选项配置-->
+	<script src="js/Options/default-option.js" type="text/javascript" charset="utf-8"></script>
+	<script src="js/Options/pie-option.js" type="text/javascript" charset="utf-8"></script>
+	<script src="js/Options/bar-option.js" type="text/javascript" charset="utf-8"></script>
+	<script>
+		var chart = undefined;
+		var resizeWaiter = undefined;
+		var zoomSize = 6;
+		$(document).ready(function() {
+			//图表本质是个canvas画布，必须要指定画布大小才可以绘制
+			setSizeOfChartContainer();
+			//初始化图表
+			chart = echarts.init(document.getElementById('chart-container'));
+			//将图表的设置交给echarts处理
+			chart.setOption(defaultOption);
+			//默认点击图表事件
+			defaultChartClickEvent();
+		})
+		//使图表自适应
+		$(window).on('resize', function() {
+			if(!resizeWaiter) {
+				resizeWaiter = true;
+				setTimeout(function() {
+					//优化，限制图表resize的频率
+					setSizeOfChartContainer();
+					chart.resize();
+					resizeWaiter = false;
+				}, 100);
+			}
+		})
+		//面板点击处理
+		$(".list-group").on('click', 'li', function() {
+			that = $(this);
+			if(!that.hasClass('active')) {
+				$(".list-group li").removeClass('active');
+				that.addClass('active');
+				$(".panel-heading").text(that.text());
+				//使用不同的option需要清空，否则之前的设置还会存在
+				chart.clear();
+				$("#chart-container").show();
+				$("#others").hide();
+				switch(that.text()) {
+					case '折线图':
+						chart.setOption(defaultOption);
+						defaultChartClickEvent();
+						break;
+					case '饼图':
+						chart.setOption(pieOption);
+						break;
+					case '柱状图':
+						chart.setOption(barOption);
+						//点击柱状图放大功能
+						//如果启用的话请注释默认点击事件，因为会冲突，echarts中没有找到解绑事件的方法
+						//						chart.on('click', function(params) {
+						//							console.log(dataAxis[Math.max(params.dataIndex - zoomSize / 2, 0)]);
+						//							chart.dispatchAction({
+						//								type: 'dataZoom',
+						//								startValue: dataAxis[Math.max(params.dataIndex - zoomSize / 2, 0)],
+						//								endValue: dataAxis[Math.min(params.dataIndex + zoomSize / 2, data.length - 1)]
+						//							});
+						//						});
+						break;
+					case '其他':
+						$("#chart-container").hide();
+						$("#others").show();
+						break
+					default:
+						chart.setOption(defaultOption);
+						break;
+				}
+			}
+
+		})
+		//确定图表容器的大小
+		function setSizeOfChartContainer() {
+			//宽由于div自身的性质可以100%是能确定的，但是高度是必须要设置的
+			$("#chart-container").height($("#chart-panel-container").width() / 2);
+		}
+		//默认点击图标的事件
+		function defaultChartClickEvent() {
+			chart.on('click', function(e) {
+				alert('你点击了图表，获得了一个对象，对象的属性请看控制台');
+				console.log(e)
+			})
+		}
+	</script>
 
 </html>
